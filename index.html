@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>PIPINKY-CHAT</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; padding: 20px; }
+        .container { background: #1e293b; width: 100%; max-width: 450px; height: 80vh; border-radius: 15px; display: flex; flex-direction: column; padding: 20px; }
+        #chat-win { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; border-bottom: 1px solid #334155; }
+        .msg { margin-bottom: 10px; padding: 8px; border-radius: 8px; background: #334155; }
+        .me { background: #2563eb; text-align: right; }
+        .mediator { border: 1px solid #fbbf24; color: #fbbf24; }
+        input, button { padding: 10px; border-radius: 5px; border: none; }
+        #login-area { text-align: center; margin-top: 100px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="login-area">
+            <h2>Vstup do PIPINKY-CHAT</h2>
+            <input type="password" id="pass" placeholder="Heslo chatu"><br><br>
+            <input type="text" id="user" placeholder="Tvoje meno"><br><br>
+            <button onclick="login()">Vstúpiť</button>
+        </div>
+        <div id="chat-area" style="display:none; flex-direction: column; height: 100%;">
+            <div id="chat-win"></div>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="msg" style="flex:1">
+                <button onclick="send()">Poslať</button>
+            </div>
+            <button onclick="mediate()" style="margin-top:10px; background: #fbbf24; color: #000; font-weight: bold;">✨ Pomoc mediátora</button>
+        </div>
+    </div>
+
+    <!-- Namiesto starého skriptu na PHP tu máme Firebase + Gemini API -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // Tvoje presné údaje z Firebase (z obrázka)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBT9raZL7sCnDDFT1urF7MBoRGjzBKvCUU",
+            authDomain: "chat-c1dea.firebaseapp.com",
+            databaseURL: "https://chat-c1dea-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "chat-c1dea",
+            storageBucket: "chat-c1dea.firebasestorage.app",
+            messagingSenderId: "222947582562",
+            appId: "1:222947582562:web:2de87bf56521ad00fee73b"
+        };
+
+        // Inicializácia Firebase databázy
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const chatRef = ref(db, 'chat_messages');
+
+        // Tvoje heslá
+        const CHAT_PASSWORD = "MilujemTA";
+        const GEMINI_KEY = "AIzaSyDgsgrlMSxw9UvihoiPVqO4ru07h86PZIA";
+
+        window.myName = "";
+        let chatHistory = "";
+
+        // Funkcia na prihlásenie
+        window.login = function() {
+            const p = document.getElementById('pass').value;
+            window.myName = document.getElementById('user').value;
+            
+            if (p === CHAT_PASSWORD) {
+                document.getElementById('login-area').style.display = 'none';
+                document.getElementById('chat-area').style.display = 'flex';
+                loadMessages();
+            } else {
+                alert("Zlé heslo!");
+            }
+        };
+
+        // Funkcia na odoslanie správy
+        window.send = function() {
+            const m = document.getElementById('msg');
+            if (m.value.trim() !== '') {
+                push(chatRef, {
+                    sender: window.myName,
+                    message: m.value,
+                    timestamp: Date.now()
+                });
+                m.value = '';
+            }
+        };
+
+        // Funkcia na načítanie správ (funguje v reálnom čase, bez nutnosti obnovovať)
+        function loadMessages() {
+            const chatWin = document.getElementById('chat-win');
+            chatWin.innerHTML = ''; // Vyčistíme okno pred načítaním
+            
+            onChildAdded(chatRef, (snapshot) => {
+                const data = snapshot.val();
+                
+                // Ukladáme históriu pre AI mediátora
+                chatHistory = data.sender + ": " + data.message + "\n" + chatHistory;
+
+                // Vytvorenie dizajnu správy (tvoj pôvodný kód)
+                const msgHTML = `
+                    <div class="msg ${data.sender === window.myName ? 'me' : (data.sender === 'Mediátor' ? 'mediator' : '')}">
+                        <b>${data.sender}:</b><br>${data.message}
+                    </div>`;
+                
+                chatWin.insertAdjacentHTML('beforeend', msgHTML);
+                chatWin.scrollTop = chatWin.scrollHeight; // Automatické rolovanie dole
+            });
+        }
+
+        // Funkcia pre AI Mediátora (Gemini)
+        window.mediate = async function() {
+            const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_KEY;
+            const prompt = "Si neutrálny a empatický mediátor v slovenskom jazyku. Tu je konverzácia dvoch ľudí:\n\n" + chatHistory + "\n\nStručne poraď, ako komunikovať konštruktívne a bez hádok.";
+            
+            try {
+                // Voláme priamo Gemini AI bez PHP
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const resData = await response.json();
+                
+                if (resData.candidates && resData.candidates[0].content.parts[0].text) {
+                    const aiReply = resData.candidates[0].content.parts[0].text;
+                    // Odošleme radu mediátora rovno do Firebase
+                    push(chatRef, {
+                        sender: 'Mediátor',
+                        message: aiReply,
+                        timestamp: Date.now()
+                    });
+                } else {
+                    alert("Mediátor momentálne neodpovedá. Skús neskôr.");
+                }
+            } catch (e) {
+                alert("Chyba spojenia: " + e.message);
+            }
+        };
+    </script>
+</body>
+</html>
