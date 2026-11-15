@@ -2,12 +2,12 @@
 <html lang="sk">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#111827" />
     <meta name="description" content="Skupinový chat s AI mediátorom." />
     <title>Pipinky Chat</title>
-    <script type="module" crossorigin src="./assets/index-DeQWXos0.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-OIziq1Aw.css">
+    <script type="module" crossorigin src="./assets/index-B-VPD2Mx.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BPop05Ex.css">
   </head>
   <body>
     <main class="app-shell">
@@ -36,11 +36,14 @@
           </div>
           <button id="logout-button" class="button button-quiet" type="button">Odísť</button>
         </header>
-        <form id="name-form" class="name-form">
-          <label class="sr-only" for="new-name">Nové meno</label>
-          <input id="new-name" type="text" maxlength="40" autocomplete="nickname" placeholder="Zmeniť meno" required />
-          <button id="name-button" class="button button-quiet" type="submit">Uložiť meno</button>
-        </form>
+        <details class="name-settings">
+          <summary>Zmeniť meno</summary>
+          <form id="name-form" class="name-form">
+            <label class="sr-only" for="new-name">Nové meno</label>
+            <input id="new-name" type="text" maxlength="40" autocomplete="nickname" placeholder="Nové meno" required />
+            <button id="name-button" class="button button-quiet" type="submit">Uložiť</button>
+          </form>
+        </details>
         <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
         <p id="chat-error" class="error-message chat-error" role="alert" hidden></p>
         <form id="message-form" class="message-form">
