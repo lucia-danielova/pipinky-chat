@@ -4,41 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#111827" />
-    <meta name="description" content="Súkromný skupinový chat s AI mediátorom." />
+    <meta name="description" content="Skupinový chat s AI mediátorom." />
     <title>Pipinky Chat</title>
   </head>
   <body>
     <main class="app-shell">
       <section id="login-view" class="login-view" aria-labelledby="login-title">
         <div class="brand-mark" aria-hidden="true">P</div>
-        <p class="eyebrow">SÚKROMNÝ PRIESTOR</p>
+        <p class="eyebrow">SPOLOČNÝ PRIESTOR</p>
         <h1 id="login-title">Pipinky Chat</h1>
-        <p class="muted">Prihlás sa jednorazovým kódom, ktorý ti pošleme e-mailom.</p>
+        <p class="muted">Prihlás sa odkazom, ktorý ti pošleme e-mailom.</p>
         <form id="login-form" class="form-card">
           <div class="field">
             <label for="email">E-mail</label>
             <input id="email" name="email" type="email" autocomplete="email" required />
           </div>
           <p id="login-error" class="error-message" role="alert" hidden></p>
-          <button id="login-button" class="button button-primary" type="submit">Poslať kód</button>
+          <p id="login-success" class="success-message" role="status" hidden></p>
+          <button id="login-button" class="button button-primary" type="submit">Poslať prihlasovací odkaz</button>
         </form>
-        <form id="code-form" class="form-card" hidden>
-          <p id="code-instructions" class="muted"></p>
-          <div class="field">
-            <label for="code">Kód z e-mailu</label>
-            <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" minlength="6" maxlength="10" required />
-          </div>
-          <p id="code-error" class="error-message" role="alert" hidden></p>
-          <button id="code-button" class="button button-primary" type="submit">Prihlásiť sa</button>
-          <button id="change-email" class="button button-quiet" type="button">Zmeniť e-mail alebo poslať kód znova</button>
-        </form>
-        <p class="muted invite-note">Účet musí vytvoriť správca chatu.</p>
+        <p class="muted invite-note">Každý používateľ s potvrdeným e-mailom má prístup k celému chatu.</p>
       </section>
 
       <section id="chat-view" class="chat-view" aria-label="Skupinový chat" hidden>
         <header class="chat-header">
           <div>
-            <p class="eyebrow">SÚKROMNÝ PRIESTOR</p>
+            <p class="eyebrow">SPOLOČNÝ PRIESTOR</p>
             <h1>Pipinky Chat</h1>
             <p id="current-user" class="user-label"></p>
           </div>

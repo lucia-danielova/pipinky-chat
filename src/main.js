@@ -14,11 +14,8 @@ const chatView = document.querySelector('#chat-view');
 const loginForm = document.querySelector('#login-form');
 const loginButton = document.querySelector('#login-button');
 const loginError = document.querySelector('#login-error');
+const loginSuccess = document.querySelector('#login-success');
 const emailInput = document.querySelector('#email');
-const codeForm = document.querySelector('#code-form');
-const codeInput = document.querySelector('#code');
-const codeButton = document.querySelector('#code-button');
-const codeError = document.querySelector('#code-error');
 const messagesElement = document.querySelector('#chat-messages');
 const messageForm = document.querySelector('#message-form');
 const messageInput = document.querySelector('#message-input');
@@ -33,7 +30,6 @@ const renderedMessages = new Set();
 let currentUser;
 let activeUserId;
 let messageChannel;
-let loginEmail = '';
 
 function showError(element, error) {
   element.textContent = error?.message || 'Operáciu sa nepodarilo dokončiť. Skontroluj pripojenie a skús to znova.';
@@ -169,61 +165,31 @@ async function closeChat() {
   renderedMessages.clear();
   chatView.hidden = true;
   loginView.hidden = false;
-  codeForm.hidden = true;
-  loginForm.hidden = false;
-  codeInput.value = '';
-  loginEmail = '';
 }
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   clearMessage(loginError);
+  clearMessage(loginSuccess);
   loginButton.disabled = true;
   const email = emailInput.value.trim();
 
   try {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: false },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'https://lucia-danielova.github.io/pipinky-chat/',
+      },
     });
     if (error) throw error;
-    loginEmail = email;
-    document.querySelector('#code-instructions').textContent = `Kód sme poslali na ${email}.`;
-    loginForm.hidden = true;
-    codeForm.hidden = false;
-    codeInput.value = '';
-    codeInput.focus();
+    loginSuccess.textContent = 'Ak máš účet, skontroluj e-mail a otvor prihlasovací odkaz.';
+    loginSuccess.hidden = false;
   } catch (error) {
     showError(loginError, error);
   } finally {
     loginButton.disabled = false;
   }
-});
-
-codeForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  clearMessage(codeError);
-  codeButton.disabled = true;
-  try {
-    const { error } = await supabase.auth.verifyOtp({
-      email: loginEmail,
-      token: codeInput.value.trim(),
-      type: 'email',
-    });
-    if (error) throw error;
-    codeInput.value = '';
-  } catch (error) {
-    showError(codeError, error);
-  } finally {
-    codeButton.disabled = false;
-  }
-});
-
-document.querySelector('#change-email').addEventListener('click', () => {
-  codeForm.hidden = true;
-  loginForm.hidden = false;
-  clearMessage(codeError);
-  emailInput.focus();
 });
 
 messageForm.addEventListener('submit', async (event) => {
