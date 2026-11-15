@@ -12,22 +12,22 @@ Mobilný skupinový chat pre Android vytvorený pomocou Vite, Capacitor a Supaba
    npx supabase link --project-ref ldjkfobspnmripeipboc
    ```
 
-3. V Supabase Authentication vypni verejnú registráciu.
+3. V Supabase Authentication povoľ registráciu a potvrdenie e-mailovej adresy.
 4. Vytvor tabuľky, politiky RLS a realtime publikáciu:
 
    ```powershell
    npx supabase db push --remote
    ```
 
-5. V **Authentication > Users** správca vopred vytvorí účty pre povolené e-mailové adresy. Profily sa vytvoria automaticky.
-6. V **Authentication > Email Templates > Magic Link** uprav e-mailovú šablónu tak, aby obsahovala `{{ .Token }}`; predvolená šablóna posiela odkaz namiesto kódu. Na spoľahlivé posielanie e-mailov nakonfiguruj vlastné SMTP. V **Edge Functions > Secrets** nastav nový `GEMINI_API_KEY`.
+5. Profily používateľov sa vytvoria automaticky pri registrácii.
+6. V **Edge Functions > Secrets** nastav nový `GEMINI_API_KEY`. Supabase predvolene posiela prihlasovací odkaz; predvolený e-mailový server má obmedzený počet príjemcov a pre ďalších používateľov je potrebné nakonfigurovať vlastné SMTP.
 7. Nasaď AI mediátora:
 
    ```powershell
    npx supabase functions deploy mediate
    ```
 
-Používatelia sa prihlasujú pomocou e-mailu a jednorazového kódu, bez hesla. Aplikácia nevytvára účty pri prihlásení. Vypnutie verejnej registrácie v Supabase je nevyhnutné, pretože samotný klientsky prepínač nebráni priamym volaniam API.
+Používatelia sa prihlasujú pomocou jednorazového e-mailového odkazu, bez hesla. Odkaz otvorí webovú verziu chatu. Zaregistrovať sa môže ktokoľvek s e-mailovou adresou; každý prihlásený používateľ môže čítať celý chat.
 
 ## Spustenie webovej verzie
 
