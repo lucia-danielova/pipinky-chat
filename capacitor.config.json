@@ -1,0 +1,6 @@
+{
+  "appId": "sk.pipinky.chat",
+  "appName": "Pipinky Chat",
+  "webDir": "dist",
+  "androidScheme": "https"
+}
