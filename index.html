@@ -13,15 +13,26 @@
         <div class="brand-mark" aria-hidden="true">P</div>
         <p class="eyebrow">SÚKROMNÝ PRIESTOR</p>
         <h1 id="login-title">Pipinky Chat</h1>
-        <p class="muted">Zadaj spoločné heslo a meno, pod ktorým ťa ostatní uvidia.</p>
+        <p class="muted">Prihlás sa jednorazovým kódom, ktorý ti pošleme e-mailom.</p>
         <form id="login-form" class="form-card">
-          <label for="chat-password">Heslo chatu</label>
-          <input id="chat-password" name="password" type="password" autocomplete="current-password" required />
-          <label for="display-name">Tvoje meno</label>
-          <input id="display-name" name="displayName" type="text" maxlength="40" autocomplete="nickname" required />
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </div>
           <p id="login-error" class="error-message" role="alert" hidden></p>
-          <button id="login-button" class="button button-primary" type="submit">Vstúpiť do chatu</button>
+          <button id="login-button" class="button button-primary" type="submit">Poslať kód</button>
         </form>
+        <form id="code-form" class="form-card" hidden>
+          <p id="code-instructions" class="muted"></p>
+          <div class="field">
+            <label for="code">Kód z e-mailu</label>
+            <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" minlength="6" maxlength="10" required />
+          </div>
+          <p id="code-error" class="error-message" role="alert" hidden></p>
+          <button id="code-button" class="button button-primary" type="submit">Prihlásiť sa</button>
+          <button id="change-email" class="button button-quiet" type="button">Zmeniť e-mail alebo poslať kód znova</button>
+        </form>
+        <p class="muted invite-note">Účet musí vytvoriť správca chatu.</p>
       </section>
 
       <section id="chat-view" class="chat-view" aria-label="Skupinový chat" hidden>
@@ -29,6 +40,7 @@
           <div>
             <p class="eyebrow">SÚKROMNÝ PRIESTOR</p>
             <h1>Pipinky Chat</h1>
+            <p id="current-user" class="user-label"></p>
           </div>
           <button id="logout-button" class="button button-quiet" type="button">Odísť</button>
         </header>

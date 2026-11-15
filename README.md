@@ -1,35 +1,47 @@
 # Pipinky Chat
 
-Mobilný chat pre Android vytvorený pomocou Vite, Firebase a Capacitor.
+Mobilný skupinový chat pre Android vytvorený pomocou Vite, Capacitor a Supabase.
 
-## Nastavenie Firebase
+## Konfigurácia Supabase
 
-1. Vytvor alebo vyber Firebase webovú aplikáciu v projekte `chat-c1dea` a nastav obmedzenia jej web API kľúča.
-2. Skopíruj `.env.example` do `.env.local` a doplň Firebase Web App API key a App ID. Tieto hodnoty konfigurujú klienta; tajné kľúče do `.env.local` nepatria.
-3. V adresári `functions` skopíruj `.env.example` do `.env.chat-c1dea`.
-4. V Cloud Functions nastav tajomstvá:
+1. Skopíruj `.env.example` do `.env.local` a nastav `VITE_SUPABASE_ANON_KEY` na projektový publishable key. Publishable key je určený pre klienta; nikdy do klienta nevkladaj `service_role` kľúč ani databázové heslo.
+2. Nainštaluj Supabase CLI a prihlás sa:
 
    ```powershell
-   firebase functions:secrets:set CHAT_PASSWORD
-   firebase functions:secrets:set GEMINI_API_KEY
+   npx supabase login
+   npx supabase link --project-ref ldjkfobspnmripeipboc
    ```
 
-   Zadaj hodnoty cez interaktívne výzvy. Nevkladaj ich do zdrojového kódu ani do Git.
-5. Nainštaluj Firebase CLI, prihlás sa a nasaď backend spolu s pravidlami databázy:
+3. V Supabase Authentication vypni verejnú registráciu.
+4. Vytvor tabuľky, politiky RLS a realtime publikáciu:
 
    ```powershell
-   npm install -g firebase-tools
-   firebase login
-   firebase deploy --only database,functions
+   npx supabase db push --remote
    ```
 
-   Firebase Authentication, Realtime Database a Cloud Functions musia byť povolené v projekte. Použi plán Firebase, ktorý povoľuje nasadenie Cloud Functions.
+5. V **Authentication > Users** správca vopred vytvorí účty pre povolené e-mailové adresy. Profily sa vytvoria automaticky.
+6. V **Authentication > Email Templates > Magic Link** uprav e-mailovú šablónu tak, aby obsahovala `{{ .Token }}`; predvolená šablóna posiela odkaz namiesto kódu. Na spoľahlivé posielanie e-mailov nakonfiguruj vlastné SMTP. V **Edge Functions > Secrets** nastav nový `GEMINI_API_KEY`.
+7. Nasaď AI mediátora:
+
+   ```powershell
+   npx supabase functions deploy mediate
+   ```
+
+Používatelia sa prihlasujú pomocou e-mailu a jednorazového kódu, bez hesla. Aplikácia nevytvára účty pri prihlásení. Vypnutie verejnej registrácie v Supabase je nevyhnutné, pretože samotný klientsky prepínač nebráni priamym volaniam API.
 
 ## Spustenie webovej verzie
 
 ```powershell
 npm install
 npm run dev
+```
+
+Po nastavení `.env.local` môžeš nasadiť webovú verziu na Firebase Hosting:
+
+```powershell
+npm install -g firebase-tools
+firebase login
+npm run deploy:web
 ```
 
 ## Vytvorenie Android aplikácie
@@ -44,7 +56,3 @@ npm run android:open
 ```
 
 V Android Studio spusti aplikáciu na zariadení/emulátore alebo vytvor APK/AAB cez **Build > Generate Signed Bundle / APK**. Po zmenách vo webovom kóde spusti `npm run android:sync`.
-
-## Bezpečnostná poznámka
-
-Pôvodný prototyp obsahoval heslo chatu aj Gemini API kľúč v klientskom HTML. Heslo sa teraz overuje serverovou funkciou a Gemini kľúč sa používa iba na serveri. Pred nasadením zruš alebo otoč predtým zverejnené tajomstvo Gemini; obmedz Firebase Web API kľúč na potrebné API a aplikácie.

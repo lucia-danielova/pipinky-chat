@@ -1,0 +1,4 @@
+project_id = "ldjkfobspnmripeipboc"
+
+[functions.mediate]
+verify_jwt = true
