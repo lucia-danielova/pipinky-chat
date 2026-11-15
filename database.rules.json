@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "chat_messages": {
+      ".read": "auth != null && auth.token.chatMember == true",
+      "$messageId": {
+        ".write": "auth != null && auth.token.chatMember == true && newData.child('senderUid').val() == auth.uid",
+        ".validate": "newData.hasChildren(['senderUid', 'senderName', 'message', 'timestamp'])",
+        "senderUid": {
+          ".validate": "newData.isString() && newData.val() == auth.uid"
+        },
+        "senderName": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+        },
+        "message": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
