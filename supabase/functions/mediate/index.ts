@@ -60,7 +60,7 @@ Deno.serve(async (request: Request) => {
       .map((item) => `${item.sender_name}: ${item.message}`)
       .join('\n');
     const geminiResponse = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
       {
         method: 'POST',
         headers: {
@@ -73,7 +73,7 @@ Deno.serve(async (request: Request) => {
               text: `Si neutrálny a empatický mediátor v slovenskom jazyku. Stručne poraď, ako môžu účastníci komunikovať konštruktívne a bez hádok. Nepredstieraj, že poznáš celý kontext.\n\nKonverzácia:\n${history}`,
             }],
           }],
-          generationConfig: { maxOutputTokens: 512 },
+          generationConfig: { maxOutputTokens: 1024 },
         }),
       },
     );

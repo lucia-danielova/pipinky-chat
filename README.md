@@ -44,6 +44,8 @@ firebase login
 npm run deploy:web
 ```
 
+Existujúca stránka GitHub Pages používa zostavené súbory na vetve `gh-pages`. Zmeny vo vetve `main` ju automaticky neaktualizujú; po zmene treba web znovu zostaviť a nasadiť.
+
 ## Vytvorenie Android aplikácie
 
 Vyžaduje Node.js 20+, Android Studio, Android SDK a JDK 17.
