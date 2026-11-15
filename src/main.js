@@ -1,44 +1,24 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from 'firebase/auth';
-import { getDatabase, limitToLast, onChildAdded, push, query, ref, serverTimestamp } from 'firebase/database';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { createClient } from '@supabase/supabase-js';
 import './styles.css';
 
-const requiredConfig = [
-  'VITE_FIREBASE_API_KEY',
-  'VITE_FIREBASE_AUTH_DOMAIN',
-  'VITE_FIREBASE_DATABASE_URL',
-  'VITE_FIREBASE_PROJECT_ID',
-  'VITE_FIREBASE_APP_ID',
-];
-
-const missingConfig = requiredConfig.filter((key) => !import.meta.env[key]);
-if (missingConfig.length) {
-  throw new Error(`Chýba konfigurácia Firebase: ${missingConfig.join(', ')}. Pozri README.md.`);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Doplň VITE_SUPABASE_URL a VITE_SUPABASE_ANON_KEY v .env.local.');
 }
 
-const firebaseApp = initializeApp({
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-});
-const auth = getAuth(firebaseApp);
-const database = getDatabase(firebaseApp);
-const functions = getFunctions(firebaseApp, 'europe-west1');
-const chatMessagesRef = ref(database, 'chat_messages');
-const recentChatMessages = query(chatMessagesRef, limitToLast(100));
-const enterChat = httpsCallable(functions, 'enterChat');
-const requestMediation = httpsCallable(functions, 'mediate');
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const loginView = document.querySelector('#login-view');
 const chatView = document.querySelector('#chat-view');
 const loginForm = document.querySelector('#login-form');
 const loginButton = document.querySelector('#login-button');
 const loginError = document.querySelector('#login-error');
-const displayNameInput = document.querySelector('#display-name');
-const passwordInput = document.querySelector('#chat-password');
+const emailInput = document.querySelector('#email');
+const codeForm = document.querySelector('#code-form');
+const codeInput = document.querySelector('#code');
+const codeButton = document.querySelector('#code-button');
+const codeError = document.querySelector('#code-error');
 const messagesElement = document.querySelector('#chat-messages');
 const messageForm = document.querySelector('#message-form');
 const messageInput = document.querySelector('#message-input');
@@ -46,114 +26,222 @@ const sendButton = document.querySelector('#send-button');
 const mediateButton = document.querySelector('#mediate-button');
 const chatError = document.querySelector('#chat-error');
 
-let displayName = '';
-let unsubscribeMessages;
-const recentMessages = [];
 const MESSAGE_HISTORY_LIMIT = 40;
+const VISIBLE_MESSAGE_LIMIT = 100;
+const recentMessages = [];
+const renderedMessages = new Set();
+let currentUser;
+let activeUserId;
+let messageChannel;
+let loginEmail = '';
 
 function showError(element, error) {
-  element.textContent = error instanceof Error ? error.message : 'Nastala neočakávaná chyba.';
+  element.textContent = error?.message || 'Operáciu sa nepodarilo dokončiť. Skontroluj pripojenie a skús to znova.';
+  element.classList.remove('message-success');
   element.hidden = false;
 }
 
-function getErrorMessage(error) {
-  if (error?.code === 'functions/permission-denied') return 'Nesprávne heslo do chatu.';
-  if (error?.code === 'functions/unauthenticated') return 'Relácia vypršala. Znova sa prihlás.';
-  return error?.message || 'Operáciu sa nepodarilo dokončiť. Skontroluj pripojenie a skús to znova.';
-}
-
-function clearError(element) {
+function clearMessage(element) {
   element.textContent = '';
   element.hidden = true;
 }
 
-function appendMessage(message) {
-  const isMediator = message.senderUid === 'mediator';
-  const isOwnMessage = !isMediator && message.senderUid === auth.currentUser?.uid;
+function compareMessages(first, second) {
+  const timeDifference = Date.parse(first.created_at) - Date.parse(second.created_at);
+  return timeDifference || Number(first.id) - Number(second.id);
+}
+
+function renderMessage(message) {
+  const id = String(message.id);
+  if (renderedMessages.has(id)) return;
+  renderedMessages.add(id);
+
+  const isMediator = message.is_mediator === true;
+  const isOwnMessage = !isMediator && message.sender_id === currentUser?.id;
   const article = document.createElement('article');
   article.className = `message${isOwnMessage ? ' message-own' : ''}${isMediator ? ' message-mediator' : ''}`;
+  article.dataset.messageId = id;
+  article.dataset.createdAt = message.created_at;
 
   const sender = document.createElement('strong');
   sender.className = 'message-sender';
-  sender.textContent = message.senderName || 'Používateľ';
+  sender.textContent = message.sender_name || 'Používateľ';
   const body = document.createElement('p');
   body.className = 'message-body';
   body.textContent = message.message || '';
   article.append(sender, body);
-  messagesElement.append(article);
+
+  const before = Array.from(messagesElement.children).find((element) =>
+    compareMessages(
+      { id, created_at: message.created_at },
+      { id: element.dataset.messageId, created_at: element.dataset.createdAt },
+    ) < 0,
+  );
+  messagesElement.insertBefore(article, before || null);
   messagesElement.scrollTop = messagesElement.scrollHeight;
 
   recentMessages.push({
-    senderName: message.senderName || 'Používateľ',
+    id,
+    created_at: message.created_at,
+    sender_name: message.sender_name || 'Používateľ',
     message: message.message || '',
   });
-  if (recentMessages.length > MESSAGE_HISTORY_LIMIT) recentMessages.shift();
+  recentMessages.sort(compareMessages);
+  if (recentMessages.length > MESSAGE_HISTORY_LIMIT) {
+    recentMessages.splice(0, recentMessages.length - MESSAGE_HISTORY_LIMIT);
+  }
 }
 
-function startListening() {
-  if (unsubscribeMessages) unsubscribeMessages();
+async function stopListening() {
+  if (!messageChannel) return;
+  const channel = messageChannel;
+  messageChannel = undefined;
+  await supabase.removeChannel(channel);
+}
+
+async function startListening() {
+  await stopListening();
   messagesElement.replaceChildren();
   recentMessages.length = 0;
-  unsubscribeMessages = onChildAdded(
-    recentChatMessages,
-    (snapshot) => appendMessage(snapshot.val() || {}),
-    (error) => showError(chatError, error),
-  );
+  renderedMessages.clear();
+
+  messageChannel = supabase
+    .channel('public:chat_messages')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+      ({ new: message }) => renderMessage(message),
+    )
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        showError(chatError, new Error('Pripojenie k živému chatu zlyhalo.'));
+      }
+    });
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('id, sender_id, sender_name, message, is_mediator, created_at')
+    .order('id', { ascending: false })
+    .limit(VISIBLE_MESSAGE_LIMIT);
+
+  if (error) {
+    showError(chatError, error);
+    return;
+  }
+  data.reverse().forEach(renderMessage);
 }
 
-function openChat() {
+async function openChat(user) {
+  if (activeUserId === user.id && !chatView.hidden) return;
+  activeUserId = user.id;
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single();
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user.id !== user.id) {
+    if (activeUserId === user.id) activeUserId = undefined;
+    return;
+  }
+
+  currentUser = user;
+  activeUserId = user.id;
   loginView.hidden = true;
   chatView.hidden = false;
-  clearError(chatError);
-  startListening();
+  clearMessage(chatError);
+
+  if (error) showError(chatError, error);
+  document.querySelector('#current-user').textContent =
+    profile?.display_name || user.user_metadata?.display_name || user.email || '';
+  await startListening();
   messageInput.focus();
+}
+
+async function closeChat() {
+  currentUser = undefined;
+  activeUserId = undefined;
+  await stopListening();
+  messagesElement.replaceChildren();
+  recentMessages.length = 0;
+  renderedMessages.clear();
+  chatView.hidden = true;
+  loginView.hidden = false;
+  codeForm.hidden = true;
+  loginForm.hidden = false;
+  codeInput.value = '';
+  loginEmail = '';
 }
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  clearError(loginError);
+  clearMessage(loginError);
   loginButton.disabled = true;
-  loginButton.textContent = 'Prihlasujem…';
-  displayName = displayNameInput.value.trim();
-
-  if (!displayName) {
-    showError(loginError, 'Zadaj svoje meno.');
-    loginButton.disabled = false;
-    loginButton.textContent = 'Vstúpiť do chatu';
-    return;
-  }
+  const email = emailInput.value.trim();
 
   try {
-    const result = await enterChat({ password: passwordInput.value });
-    localStorage.setItem('pipinky-chat-name', displayName);
-    await signInWithCustomToken(auth, result.data.token);
-    passwordInput.value = '';
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
+    if (error) throw error;
+    loginEmail = email;
+    document.querySelector('#code-instructions').textContent = `Kód sme poslali na ${email}.`;
+    loginForm.hidden = true;
+    codeForm.hidden = false;
+    codeInput.value = '';
+    codeInput.focus();
   } catch (error) {
-    localStorage.removeItem('pipinky-chat-name');
-    showError(loginError, getErrorMessage(error));
+    showError(loginError, error);
   } finally {
     loginButton.disabled = false;
-    loginButton.textContent = 'Vstúpiť do chatu';
   }
+});
+
+codeForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  clearMessage(codeError);
+  codeButton.disabled = true;
+  try {
+    const { error } = await supabase.auth.verifyOtp({
+      email: loginEmail,
+      token: codeInput.value.trim(),
+      type: 'email',
+    });
+    if (error) throw error;
+    codeInput.value = '';
+  } catch (error) {
+    showError(codeError, error);
+  } finally {
+    codeButton.disabled = false;
+  }
+});
+
+document.querySelector('#change-email').addEventListener('click', () => {
+  codeForm.hidden = true;
+  loginForm.hidden = false;
+  clearMessage(codeError);
+  emailInput.focus();
 });
 
 messageForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  clearError(chatError);
+  clearMessage(chatError);
   const message = messageInput.value.trim();
-  if (!message || !auth.currentUser) return;
+  if (!message || !currentUser) return;
 
   sendButton.disabled = true;
   try {
-    await push(chatMessagesRef, {
-      senderUid: auth.currentUser.uid,
-      senderName: displayName,
+    const { error } = await supabase.from('chat_messages').insert({
+      sender_id: currentUser.id,
       message,
-      timestamp: serverTimestamp(),
     });
+    if (error) throw error;
     messageInput.value = '';
   } catch (error) {
-    showError(chatError, getErrorMessage(error));
+    showError(chatError, error);
   } finally {
     sendButton.disabled = false;
     messageInput.focus();
@@ -161,50 +249,38 @@ messageForm.addEventListener('submit', async (event) => {
 });
 
 mediateButton.addEventListener('click', async () => {
-  clearError(chatError);
+  clearMessage(chatError);
   if (!recentMessages.length) {
-    showError(chatError, 'Najprv musí v chate prebehnúť aspoň jedna správa.');
+    showError(chatError, new Error('Najprv musí v chate prebehnúť aspoň jedna správa.'));
     return;
   }
 
   mediateButton.disabled = true;
-  mediateButton.innerHTML = '<span aria-hidden="true">…</span> Mediátor premýšľa';
+  mediateButton.textContent = 'Mediátor premýšľa…';
   try {
-    await requestMediation({ messages: recentMessages });
+    const { error } = await supabase.functions.invoke('mediate');
+    if (error) throw error;
   } catch (error) {
-    showError(chatError, getErrorMessage(error));
+    showError(chatError, error);
   } finally {
     mediateButton.disabled = false;
-    mediateButton.innerHTML = '<span aria-hidden="true">✦</span> Pomoc mediátora';
+    mediateButton.textContent = '✦ Pomoc mediátora';
   }
 });
 
 document.querySelector('#logout-button').addEventListener('click', async () => {
-  clearError(chatError);
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-    unsubscribeMessages = undefined;
-  }
-  try {
-    await signOut(auth);
-    localStorage.removeItem('pipinky-chat-name');
-  } catch (error) {
-    showError(chatError, getErrorMessage(error));
-  }
+  clearMessage(chatError);
+  const { error } = await supabase.auth.signOut();
+  if (error) showError(chatError, error);
 });
 
-onAuthStateChanged(auth, (user) => {
-  if (user && localStorage.getItem('pipinky-chat-name')) {
-    displayName = localStorage.getItem('pipinky-chat-name').trim();
-    if (displayName) openChat();
-    else signOut(auth);
-  }
-  else {
-    if (unsubscribeMessages) {
-      unsubscribeMessages();
-      unsubscribeMessages = undefined;
+supabase.auth.onAuthStateChange((_event, session) => {
+  window.setTimeout(async () => {
+    try {
+      if (session?.user) await openChat(session.user);
+      else await closeChat();
+    } catch (error) {
+      showError(session?.user ? loginError : chatError, error);
     }
-    chatView.hidden = true;
-    loginView.hidden = false;
-  }
+  }, 0);
 });
