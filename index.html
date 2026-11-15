@@ -2,7 +2,7 @@
 <html lang="sk">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#111827" />
     <meta name="description" content="Skupinový chat s AI mediátorom." />
     <title>Pipinky Chat</title>
@@ -13,17 +13,16 @@
         <div class="brand-mark" aria-hidden="true">P</div>
         <p class="eyebrow">SPOLOČNÝ PRIESTOR</p>
         <h1 id="login-title">Pipinky Chat</h1>
-        <p class="muted">Prihlás sa odkazom, ktorý ti pošleme e-mailom.</p>
+        <p class="muted">Zadaj meno a vstúp do spoločného chatu.</p>
         <form id="login-form" class="form-card">
           <div class="field">
-            <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" autocomplete="email" required />
+            <label for="display-name">Tvoje meno</label>
+            <input id="display-name" name="display-name" type="text" maxlength="40" autocomplete="nickname" required />
           </div>
           <p id="login-error" class="error-message" role="alert" hidden></p>
-          <p id="login-success" class="success-message" role="status" hidden></p>
-          <button id="login-button" class="button button-primary" type="submit">Poslať prihlasovací odkaz</button>
+          <button id="login-button" class="button button-primary" type="submit">Vstúpiť do chatu</button>
         </form>
-        <p class="muted invite-note">Každý používateľ s potvrdeným e-mailom má prístup k celému chatu.</p>
+        <p class="muted invite-note">Chat je verejný. Meno nie je overené a môže ho použiť ktokoľvek.</p>
       </section>
 
       <section id="chat-view" class="chat-view" aria-label="Skupinový chat" hidden>
@@ -35,6 +34,14 @@
           </div>
           <button id="logout-button" class="button button-quiet" type="button">Odísť</button>
         </header>
+        <details class="name-settings">
+          <summary>Zmeniť meno</summary>
+          <form id="name-form" class="name-form">
+            <label class="sr-only" for="new-name">Nové meno</label>
+            <input id="new-name" type="text" maxlength="40" autocomplete="nickname" placeholder="Nové meno" required />
+            <button id="name-button" class="button button-quiet" type="submit">Uložiť</button>
+          </form>
+        </details>
         <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
         <p id="chat-error" class="error-message chat-error" role="alert" hidden></p>
         <form id="message-form" class="message-form">

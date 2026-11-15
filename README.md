@@ -12,7 +12,7 @@ Mobilný skupinový chat pre Android vytvorený pomocou Vite, Capacitor a Supaba
    npx supabase link --project-ref ldjkfobspnmripeipboc
    ```
 
-3. V Supabase Authentication povoľ registráciu a potvrdenie e-mailovej adresy.
+3. V Supabase Authentication povoľ anonymné prihlásenie (`enable_anonymous_sign_ins`).
 4. Vytvor tabuľky, politiky RLS a realtime publikáciu:
 
    ```powershell
@@ -20,14 +20,14 @@ Mobilný skupinový chat pre Android vytvorený pomocou Vite, Capacitor a Supaba
    ```
 
 5. Profily používateľov sa vytvoria automaticky pri registrácii.
-6. V **Edge Functions > Secrets** nastav nový `GEMINI_API_KEY`. Supabase predvolene posiela prihlasovací odkaz; predvolený e-mailový server má obmedzený počet príjemcov a pre ďalších používateľov je potrebné nakonfigurovať vlastné SMTP.
+6. V **Edge Functions > Secrets** nastav `GEMINI_API_KEY`.
 7. Nasaď AI mediátora:
 
    ```powershell
    npx supabase functions deploy mediate
    ```
 
-Používatelia sa prihlasujú pomocou jednorazového e-mailového odkazu, bez hesla. Odkaz otvorí webovú verziu chatu. Zaregistrovať sa môže ktokoľvek s e-mailovou adresou; každý prihlásený používateľ môže čítať celý chat.
+Používatelia zadajú iba meno a získajú anonymnú reláciu. Chat a všetky správy sú verejne prístupné, mená sa neoverujú a ktokoľvek môže použiť cudzie meno alebo mediátora. Pri strate relácie sa anonymný účet nedá obnoviť. Pred širším použitím nastav ochranu proti zneužitiu, napríklad CAPTCHA a obmedzenie volaní mediátora.
 
 ## Spustenie webovej verzie
 
@@ -48,13 +48,14 @@ Existujúca stránka GitHub Pages používa zostavené súbory na vetve `gh-page
 
 ## Vytvorenie Android aplikácie
 
-Vyžaduje Node.js 20+, Android Studio, Android SDK a JDK 17.
+Vyžaduje Node.js 20+, Android Studio, Android SDK a JDK 21. Android projekt je už súčasťou repozitára.
 
 ```powershell
 npm install
-npm run android:add
 npm run android:sync
 npm run android:open
 ```
 
 V Android Studio spusti aplikáciu na zariadení/emulátore alebo vytvor APK/AAB cez **Build > Generate Signed Bundle / APK**. Po zmenách vo webovom kóde spusti `npm run android:sync`.
+
+GitHub Actions tiež zostaví inštalačné debug APK a uloží ho ako artefakt `pipinky-chat-android-debug`. Zostavenie vyžaduje repozitárový secret `PIPINKY_SUPABASE_PUBLISHABLE_KEY` s verejným Supabase publishable key. Debug APK je určené na testovanie; pre distribúciu a spoľahlivé aktualizácie treba vytvoriť release zostavenie podpísané vlastným bezpečne uloženým kľúčom.

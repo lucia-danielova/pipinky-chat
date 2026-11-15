@@ -14,8 +14,10 @@ const chatView = document.querySelector('#chat-view');
 const loginForm = document.querySelector('#login-form');
 const loginButton = document.querySelector('#login-button');
 const loginError = document.querySelector('#login-error');
-const loginSuccess = document.querySelector('#login-success');
-const emailInput = document.querySelector('#email');
+const displayNameInput = document.querySelector('#display-name');
+const nameForm = document.querySelector('#name-form');
+const newNameInput = document.querySelector('#new-name');
+const nameButton = document.querySelector('#name-button');
 const messagesElement = document.querySelector('#chat-messages');
 const messageForm = document.querySelector('#message-form');
 const messageInput = document.querySelector('#message-input');
@@ -51,6 +53,7 @@ function renderMessage(message) {
   const id = String(message.id);
   if (renderedMessages.has(id)) return;
   renderedMessages.add(id);
+  const isNearBottom = messagesElement.scrollHeight - messagesElement.scrollTop - messagesElement.clientHeight < 80;
 
   const isMediator = message.is_mediator === true;
   const isOwnMessage = !isMediator && message.sender_id === currentUser?.id;
@@ -74,7 +77,7 @@ function renderMessage(message) {
     ) < 0,
   );
   messagesElement.insertBefore(article, before || null);
-  messagesElement.scrollTop = messagesElement.scrollHeight;
+  if (isNearBottom) messagesElement.scrollTop = messagesElement.scrollHeight;
 
   recentMessages.push({
     id,
@@ -153,7 +156,6 @@ async function openChat(user) {
   document.querySelector('#current-user').textContent =
     profile?.display_name || user.user_metadata?.display_name || user.email || '';
   await startListening();
-  messageInput.focus();
 }
 
 async function closeChat() {
@@ -170,25 +172,50 @@ async function closeChat() {
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   clearMessage(loginError);
-  clearMessage(loginSuccess);
   loginButton.disabled = true;
-  const email = emailInput.value.trim();
+  const displayName = displayNameInput.value.trim();
 
   try {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: 'https://lucia-danielova.github.io/pipinky-chat/',
-      },
+    if (!displayName) throw new Error('Zadaj svoje meno.');
+    const { error } = await supabase.auth.signInAnonymously({
+      options: { data: { display_name: displayName } },
     });
     if (error) throw error;
-    loginSuccess.textContent = 'Ak máš účet, skontroluj e-mail a otvor prihlasovací odkaz.';
-    loginSuccess.hidden = false;
   } catch (error) {
     showError(loginError, error);
   } finally {
     loginButton.disabled = false;
+  }
+});
+
+nameForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  clearMessage(chatError);
+  const displayName = newNameInput.value.trim();
+  if (!displayName) {
+    showError(chatError, new Error('Zadaj svoje meno.'));
+    return;
+  }
+  if (!currentUser) {
+    showError(chatError, new Error('Relácia vypršala. Znova vstúp do chatu.'));
+    return;
+  }
+
+  nameButton.disabled = true;
+  try {
+    const { data, error } = await supabase.from('profiles')
+      .update({ display_name: displayName })
+      .eq('id', currentUser.id)
+      .select('display_name')
+      .single();
+    if (error) throw error;
+    document.querySelector('#current-user').textContent = data.display_name;
+    newNameInput.value = '';
+    document.querySelector('.name-settings').open = false;
+  } catch (error) {
+    showError(chatError, error);
+  } finally {
+    nameButton.disabled = false;
   }
 });
 
