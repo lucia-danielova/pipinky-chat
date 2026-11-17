@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "lint": "eslint src",
+    "format": "prettier --write src index.html",
     "preview": "vite preview",
     "deploy:web": "npm run build && firebase deploy --only hosting",
     "android:add": "cap add android",
@@ -19,6 +21,10 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
     "vite": "^6.0.0"
   }
 }
