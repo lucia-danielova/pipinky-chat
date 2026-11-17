@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { mediatorErrorMessage } from './mediator-error.js';
 import './styles.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -662,11 +663,7 @@ joinForm.addEventListener('submit', async (event) => {
 async function invokeMediator(body) {
   const { data, error } = await supabase.functions.invoke('mediate', { body });
   if (error) {
-    let response;
-    if (error.context?.json) {
-      try { response = await error.context.json(); } catch { /* Use the original error below. */ }
-    }
-    throw new Error(response?.error || error.message);
+    throw new Error(await mediatorErrorMessage(error));
   }
   if (!data?.ok) throw new Error(data?.error || 'Mediátor nevrátil platnú odpoveď.');
   return data;
@@ -736,7 +733,7 @@ $('#coach-button').addEventListener('click', async () => {
   if (!currentCase) return;
   const draft = messageInput.value.trim();
   if (!draft) {
-    showError(chatError, new Error('Najprv napíšte koncept správy pre súkromného kouča.'));
+    showError(chatError, new Error('Najprv napíšte návrh správy, ktorý chcete súkromne skonzultovať.'));
     messageInput.focus();
     return;
   }
