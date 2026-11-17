@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#080c14" />
     <meta name="description" content="Bezpečný priestor pre vedený rozhovor a riešenie konfliktov." />
     <title>Mediačný priestor</title>
-    <script type="module" crossorigin src="./assets/index-BkGSJBsJ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DEpt6Ukt.css">
+    <script type="module" crossorigin src="./assets/index-CKhrbhMo.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BvSUqDBj.css">
   </head>
   <body>
     <main class="app-shell">
@@ -23,6 +23,7 @@
           </div>
         </div>
 
+        <div class="lobby-column">
         <div class="lobby-card">
           <div class="lobby-heading">
             <p class="eyebrow">ZAČNITE TU</p>
@@ -61,13 +62,6 @@
                 <div id="participants-inputs" class="participants-inputs"></div>
                 <p class="field-hint">Prvý účastník je zakladateľ prípadu. Každé meno musí byť jedinečné.</p>
               </fieldset>
-              <div class="field">
-                <label for="create-recovery-key">Váš osobný obnovovací kľúč</label>
-                <input id="create-recovery-key" type="text" autocomplete="off" readonly required />
-                <button id="generate-create-key" class="button button-subtle" type="button">Vygenerovať osobný kľúč</button>
-                <span class="field-hint">Uložte si kľúč na bezpečné miesto. Nezdieľajte ho s ostatnými; pri strate ho nemožno obnoviť.</span>
-                <label><input id="create-key-saved" type="checkbox" required /> Kľúč som si bezpečne uložil(a).</label>
-              </div>
               <button id="create-button" class="button button-primary full-width" type="submit">Vytvoriť prípad <span aria-hidden="true">→</span></button>
             </form>
           </div>
@@ -86,18 +80,18 @@
             <div id="join-role-picker" class="role-picker" aria-live="polite" hidden>
               <p class="eyebrow">KROK 2</p>
               <h3>Vyberte svoje meno</h3>
-              <p>Na obnovu obsadeného miesta potrebujete svoj osobný kľúč. Na nové miesto si vygenerujte a uložte nový kľúč.</p>
-              <div class="field">
-                <label for="join-recovery-key">Osobný obnovovací kľúč</label>
-                <input id="join-recovery-key" type="text" autocomplete="off" spellcheck="false" />
-                <button id="generate-join-key" class="button button-subtle" type="button">Vygenerovať nový kľúč</button>
-                <span class="field-hint">Kľúč si bezpečne uložte a nezdieľajte ho. Pri návrate cez existujúcu reláciu ho nemusíte zadávať.</span>
-                <label><input id="join-key-saved" type="checkbox" /> Kľúč som si bezpečne uložil(a).</label>
-              </div>
               <div id="join-role-buttons" class="role-buttons"></div>
             </div>
           </div>
           <p id="login-error" class="error-message" role="alert" hidden></p>
+        </div>
+        <aside class="trust-bar" aria-label="Informácie o súkromí">
+          <ul>
+            <li><span aria-hidden="true">🔒</span><span>Izolované miestnosti chránené heslom. Každý, kto pozná heslo a kód, môže prevziať meno iného účastníka.</span></li>
+            <li><span aria-hidden="true">🧹</span><span>Automatické mazanie neaktívnych prípadov po 30 dňoch zatiaľ nie je zavedené.</span></li>
+            <li><span aria-hidden="true">⚕️</span><span>AI mediátor je komunikačný pomocník, nenahrádza odbornú terapiu ani právne poradenstvo.</span></li>
+          </ul>
+        </aside>
         </div>
       </section>
 
@@ -110,19 +104,24 @@
               <h1 id="case-title-display"></h1>
               <div class="case-badges">
                 <button id="copy-invite-button" class="invite-button" type="button" title="Skopírovať pozvánku vrátane hesla">
-                  <span id="case-code-badge" class="case-code"></span><span>Pozvať partnera</span>
+                  <span id="case-code-badge" class="case-code"></span><span class="invite-label">Pozvať partnera</span>
                 </button>
-                <span id="current-user" class="user-badge"></span>
               </div>
             </div>
           </div>
           <div class="header-actions">
-            <div id="pace-indicator" class="pace-pill" data-pace="calm" role="status">
-              <span>Tempo rozhovoru</span><strong id="tension-label">Pokojné tempo</strong>
-            </div>
             <button id="timeout-button" class="button button-subtle" type="button">◷ <span>Pauza</span></button>
-            <button id="export-button" class="button button-subtle" type="button">↓ <span>Zápis</span></button>
-            <button id="logout-button" class="button button-subtle" type="button">Odísť</button>
+            <div class="header-more">
+              <button id="header-more-toggle" class="button button-subtle header-more-toggle" type="button" aria-label="Ďalšie možnosti prípadu" aria-expanded="false" aria-controls="header-more-content">⋯</button>
+              <div id="header-more-content" class="header-more-content">
+                <div id="pace-indicator" class="pace-pill" data-pace="calm" role="status">
+                  <span>Tempo rozhovoru</span><strong id="tension-label">Pokojné tempo</strong>
+                </div>
+                <span id="current-user" class="user-badge"></span>
+                <button id="export-button" class="button button-subtle" type="button" aria-label="Exportovať zápis" title="Exportovať zápis">↓ <span>Zápis</span></button>
+                <button id="logout-button" class="button button-subtle" type="button" aria-label="Odísť" title="Odísť"><span class="logout-icon" aria-hidden="true">↪</span><span>Odísť</span></button>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -151,7 +150,7 @@
         <footer class="chat-dock">
           <section id="coach-drawer" class="coach-drawer" aria-labelledby="coach-title" hidden>
             <div class="drawer-header">
-              <div><p class="privacy-badge">SÚKROMNÁ KONZULTÁCIA – VIDÍŠ IBA TY</p><h2 id="coach-title">Súkromný kouč</h2></div>
+              <div><p class="privacy-badge">SÚKROMNÁ KONZULTÁCIA – VIDÍTE IBA VY</p><h2 id="coach-title">Súkromný kouč</h2></div>
               <button id="coach-close" class="icon-button" type="button" aria-label="Zavrieť súkromného kouča">×</button>
             </div>
             <p class="drawer-note">Tento návrh sa nezobrazí ostatným, pokiaľ ho sami neodošlete.</p>
