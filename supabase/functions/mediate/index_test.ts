@@ -96,6 +96,7 @@ Deno.test('private coaching returns the result without publishing private conten
   assert(history?.url.searchParams.get('case_id') === `eq.${caseId}`, 'History is not case scoped');
   const gemini = calls.find((call) => call.url.hostname === 'generativelanguage.googleapis.com');
   assert(JSON.stringify(gemini?.body).includes('Súkromný koncept'), 'Draft missing from prompt');
+  assert(JSON.stringify(gemini?.body).includes('účastníkom vykaj'), 'Formal address missing from prompt');
 });
 
 Deno.test('public agreement is published as the validated structured result', async () => {
@@ -144,6 +145,9 @@ Deno.test('membership and rate limits block access before invoking Gemini', asyn
   for (const [options, status] of [[{ missingMember: true }, 404], [{ retryAfter: 5 }, 429]] as const) {
     const { response, calls } = await run({ caseId, action: 'private_coach', mode: 'needs' }, options);
     assert(response.status === status, 'Wrong access or limit response');
+    if (status === 429) {
+      assert((await response.json()).error === 'Mediátora môžete požiadať znova o chvíľu.', 'Unexpected rate limit message');
+    }
     assert(!calls.some((call) => call.url.hostname === 'generativelanguage.googleapis.com'), 'Called Gemini');
   }
 });

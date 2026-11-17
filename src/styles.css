@@ -70,6 +70,11 @@ h1, h2, h3 { letter-spacing: -.035em; }
   -webkit-backdrop-filter: blur(20px);
 }
 .lobby-card { padding: 34px; border-radius: 22px; box-shadow: 0 24px 70px rgba(0, 0, 0, .28); }
+.lobby-column { min-width: 0; }
+.trust-bar { margin-top: 16px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 14px; background: rgba(15, 23, 42, .55); color: #b7c3d4; font-size: 12px; line-height: 1.55; }
+.trust-bar ul { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.trust-bar li { display: flex; align-items: flex-start; gap: 9px; }
+.trust-bar li > span:first-child { flex: none; }
 .lobby-heading h2 { margin-top: 8px; font-size: 25px; }
 .lobby-heading > p:last-child { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .lobby-tabs { display: flex; gap: 4px; padding: 4px; margin: 25px 0; border: 1px solid var(--border); border-radius: 12px; background: rgba(5, 10, 20, .5); }
@@ -109,6 +114,8 @@ input::placeholder, textarea::placeholder { color: #78859b; }
 .chat-view { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; background: radial-gradient(ellipse at 50% 0, rgba(99, 102, 241, .07), transparent 40%), var(--background); }
 .case-header { display: flex; justify-content: space-between; align-items: center; gap: 22px; padding: 18px clamp(20px, 4vw, 56px); border-width: 0 0 1px; }
 .case-identity, .header-actions, .case-badges { display: flex; align-items: center; }
+.header-more, .header-more-content { display: contents; }
+.header-more-toggle, .logout-icon { display: none; }
 .case-identity { gap: 13px; min-width: 0; }
 .brand-mark-small { width: 42px; height: 42px; flex: none; border-radius: 13px; font-size: 22px; }
 .case-details { min-width: 0; }
@@ -285,4 +292,41 @@ input::placeholder, textarea::placeholder { color: #78859b; }
   .chat-view { overflow-y: auto; }
   .conversation { flex: 1 0 180px; }
   .chat-dock { flex-shrink: 0; }
+}
+@media (max-width: 640px) {
+  .chat-view { overflow: hidden; }
+  .case-header { position: relative; z-index: 4; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 8px 10px; }
+  .case-identity { flex: 1 1 auto; min-width: 0; }
+  .case-identity > .brand-mark, .case-details > .eyebrow, .invite-label { display: none; }
+  .case-details { display: flex; align-items: center; gap: 6px; width: 100%; }
+  .case-details h1 { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 13px; }
+  .case-badges { flex: none; margin: 0; }
+  .header-actions { flex: none; width: auto; gap: 5px; }
+  .header-actions .button { min-height: 36px; padding: 0 8px; font-size: 11px; }
+  .header-more { position: relative; display: block; }
+  .header-more-toggle { display: inline-flex; min-width: 36px; font-size: 18px !important; }
+  .header-more-content { position: absolute; z-index: 5; top: calc(100% + 6px); right: 0; display: none; flex-wrap: wrap; align-items: center; gap: 8px; width: 210px; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: #0f172a; box-shadow: 0 12px 32px rgba(0, 0, 0, .4); }
+  .header-more-toggle[aria-expanded="true"] + .header-more-content { display: flex; }
+  .header-more-content .pace-pill { flex: 1 0 100%; margin: 0; }
+  .header-more-content .user-badge { flex: 1; overflow-wrap: anywhere; }
+  .header-more-content .button > span:not(.logout-icon) { display: none; }
+  .logout-icon { display: inline; }
+  .phase-stepper { flex: none; padding: 8px 10px; overflow-x: auto; }
+  .phase-stepper ol { justify-content: flex-start; width: max-content; min-width: 100%; }
+  .phase-stepper li { flex: none; gap: 4px; font-size: 10px; }
+  .phase-stepper li > span { width: 19px; height: 19px; }
+  .phase-stepper li:not(:last-child)::after { width: 10px; margin: 0 5px; }
+  .conversation { flex: 1 1 0; min-height: 0; padding: 8px 12px 0; }
+  .conversation-heading { display: none; }
+  .chat-messages { padding: 8px 0; }
+  .chat-empty { inset: 10px; }
+  .chat-dock { flex: none; padding: 6px 10px max(8px, env(safe-area-inset-bottom)); }
+  .message-form { padding: 7px 9px; }
+  .message-form textarea { min-height: 36px; font-size: 16px; }
+  .composer-actions > span { display: none; }
+  .composer-actions { justify-content: flex-end; }
+  .chat-dock .button { min-height: 34px; }
+  .mediator-actions { margin-top: 6px; }
+  .chat-dock:has(#message-input:focus) .mediator-actions { display: none; }
+  .coach-drawer { right: 10px; left: 10px; }
 }
