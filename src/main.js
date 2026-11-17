@@ -27,6 +27,11 @@ const chatError = document.querySelector('#chat-error');
 
 const MESSAGE_HISTORY_LIMIT = 40;
 const VISIBLE_MESSAGE_LIMIT = 100;
+const MAX_RENDERED_MESSAGES = 150;
+const messageTimeFormatter = new Intl.DateTimeFormat('sk-SK', {
+  hour: '2-digit',
+  minute: '2-digit',
+});
 const recentMessages = [];
 const renderedMessages = new Set();
 let currentUser;
@@ -62,13 +67,21 @@ function renderMessage(message) {
   article.dataset.messageId = id;
   article.dataset.createdAt = message.created_at;
 
+  const meta = document.createElement('div');
+  meta.className = 'message-meta';
   const sender = document.createElement('strong');
   sender.className = 'message-sender';
   sender.textContent = message.sender_name || 'Používateľ';
+  const time = document.createElement('time');
+  time.className = 'message-time';
+  time.dateTime = message.created_at;
+  time.textContent = messageTimeFormatter.format(new Date(message.created_at));
+  meta.append(sender, time);
+
   const body = document.createElement('p');
   body.className = 'message-body';
   body.textContent = message.message || '';
-  article.append(sender, body);
+  article.append(meta, body);
 
   const before = Array.from(messagesElement.children).find((element) =>
     compareMessages(
@@ -77,6 +90,12 @@ function renderMessage(message) {
     ) < 0,
   );
   messagesElement.insertBefore(article, before || null);
+  while (messagesElement.children.length > MAX_RENDERED_MESSAGES) {
+    const oldestMessage = messagesElement.firstElementChild;
+    if (!oldestMessage) break;
+    renderedMessages.delete(oldestMessage.dataset.messageId);
+    oldestMessage.remove();
+  }
   if (isNearBottom) messagesElement.scrollTop = messagesElement.scrollHeight;
 
   recentMessages.push({
@@ -128,6 +147,12 @@ async function startListening() {
     return;
   }
   data.reverse().forEach(renderMessage);
+}
+
+function resizeMessageInput() {
+  messageInput.style.height = 'auto';
+  messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
+  messageInput.style.overflowY = messageInput.scrollHeight > 120 ? 'auto' : 'hidden';
 }
 
 async function openChat(user) {
@@ -233,6 +258,7 @@ messageForm.addEventListener('submit', async (event) => {
     });
     if (error) throw error;
     messageInput.value = '';
+    resizeMessageInput();
   } catch (error) {
     showError(chatError, error);
   } finally {
@@ -240,6 +266,15 @@ messageForm.addEventListener('submit', async (event) => {
     messageInput.focus();
   }
 });
+
+messageInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    messageForm.requestSubmit();
+  }
+});
+
+messageInput.addEventListener('input', resizeMessageInput);
 
 mediateButton.addEventListener('click', async () => {
   clearMessage(chatError);
@@ -254,7 +289,8 @@ mediateButton.addEventListener('click', async () => {
     const { error } = await supabase.functions.invoke('mediate');
     if (error) throw error;
   } catch (error) {
-    showError(chatError, error);
+    const errorBody = await error.context?.json?.().catch(() => null);
+    showError(chatError, new Error(errorBody?.error || error.message));
   } finally {
     mediateButton.disabled = false;
     mediateButton.textContent = '✦ Pomoc mediátora';
@@ -267,13 +303,16 @@ document.querySelector('#logout-button').addEventListener('click', async () => {
   if (error) showError(chatError, error);
 });
 
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentUser) {
+    void startListening();
+  }
+});
+
 supabase.auth.onAuthStateChange((_event, session) => {
-  window.setTimeout(async () => {
-    try {
-      if (session?.user) await openChat(session.user);
-      else await closeChat();
-    } catch (error) {
-      showError(session?.user ? loginError : chatError, error);
-    }
-  }, 0);
+  const user = session?.user;
+  const stateChange = user ? openChat(user) : closeChat();
+  void stateChange.catch((error) => {
+    showError(user ? loginError : chatError, error);
+  });
 });
