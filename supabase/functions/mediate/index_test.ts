@@ -23,6 +23,7 @@ function assert(condition: unknown, message: string): asserts condition {
 
 type MockOptions = {
   missingMember?: boolean;
+  invalidUser?: boolean;
   retryAfter?: number;
   result?: unknown;
   publishError?: boolean;
@@ -48,7 +49,7 @@ async function run(
       }));
     switch (url.pathname) {
       case '/auth/v1/user':
-        return json({ id: userId });
+        return options.invalidUser ? json({ message: 'Invalid JWT' }, 401) : json({ id: userId });
       case '/rest/v1/conflict_cases':
         return json({
           title: 'Prípad', participants: ['Anna', 'Boris'], phase: 'intake',
@@ -150,6 +151,12 @@ Deno.test('membership and rate limits block access before invoking Gemini', asyn
     }
     assert(!calls.some((call) => call.url.hostname === 'generativelanguage.googleapis.com'), 'Called Gemini');
   }
+});
+
+Deno.test('invalid user tokens are rejected before accessing case data', async () => {
+  const { response, calls } = await run({ caseId, action: 'mediate', mode: 'auto' }, { invalidUser: true });
+  assert(response.status === 401, 'Invalid user token was accepted');
+  assert(!calls.some((call) => call.url.pathname.startsWith('/rest/v1/')), 'Invalid user accessed case data');
 });
 
 Deno.test('public draft and failed publication do not report success', async () => {

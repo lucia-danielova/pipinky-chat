@@ -6,4 +6,4 @@ enable_anonymous_sign_ins = true
 site_url = "https://lucia-danielova.github.io/pipinky-chat/"
 
 [functions.mediate]
-verify_jwt = true
+verify_jwt = false
