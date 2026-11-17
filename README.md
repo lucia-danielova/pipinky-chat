@@ -27,7 +27,15 @@ Mobilný skupinový chat pre Android vytvorený pomocou Vite, Capacitor a Supaba
    npx supabase functions deploy mediate
    ```
 
-Používatelia zadajú iba meno a získajú anonymnú reláciu. Chat a všetky správy sú verejne prístupné, mená sa neoverujú a ktokoľvek môže použiť cudzie meno alebo mediátora. Pri strate relácie sa anonymný účet nedá obnoviť. Pred širším použitím nastav ochranu proti zneužitiu, napríklad CAPTCHA a obmedzenie volaní mediátora.
+**Pozor:** Migrácia mediačných prípadov presunie existujúce správy do tabuľky
+`chat_messages_legacy_archive`, ktorá nie je prístupná bežným používateľom.
+Súčasný webový klient ani funkcia `mediate` zatiaľ nepodporujú povinné `case_id`
+a po jej nasadení nebudú môcť odosielať správy. Pred nasadením migrácie ich
+treba upraviť na vytváranie a pripájanie prípadov a prácu v rámci konkrétneho prípadu.
+
+Používatelia získavajú anonymnú reláciu. Pri jej strate sa anonymný účet nedá
+obnoviť. Pred širším použitím nastav ochranu proti zneužitiu, napríklad CAPTCHA
+a obmedzenie volaní mediátora.
 
 ## Spustenie webovej verzie
 
