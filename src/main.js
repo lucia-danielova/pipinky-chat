@@ -4,7 +4,7 @@ import './styles.css';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Doplň VITE_SUPABASE_URL a VITE_SUPABASE_ANON_KEY v .env.local.');
+  throw new Error('Doplňte VITE_SUPABASE_URL a VITE_SUPABASE_ANON_KEY v .env.local.');
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -27,6 +27,7 @@ const coachUse = $('#coach-use');
 const timeoutOverlay = $('#timeout-overlay');
 const inviteDialog = $('#invite-dialog');
 const modeSelect = $('#mediator-mode-select');
+const headerMoreToggle = $('#header-more-toggle');
 const sessionCaseKey = 'mediation-active-case';
 const safetyNotice = 'Možné ohrozenie: uprednostnite bezpečie. Pri bezprostrednom nebezpečenstve kontaktujte miestne tiesňové služby.';
 const timeFormatter = new Intl.DateTimeFormat('sk-SK', { hour: '2-digit', minute: '2-digit' });
@@ -48,8 +49,25 @@ const agreements = new Map();
 
 class CaseUnavailableError extends Error {}
 
+const errorMessages = new Map([
+  ['Posielaš správy príliš rýchlo. Počkaj chvíľu.', 'Správy odosielate príliš rýchlo. Počkajte, prosím, chvíľu.'],
+  ['Prihlás sa do chatu.', 'Prihláste sa do chatu.'],
+  ['Mediátora môžeš požiadať znova o chvíľu.', 'Mediátora môžete požiadať znova o chvíľu.'],
+  ['Mediátor momentálne neodpovedá. Skús neskôr.', 'Mediátor momentálne neodpovedá. Skúste to neskôr.'],
+  ['Mediátor vrátil neplatnú odpoveď. Skús neskôr.', 'Mediátor vrátil neplatnú odpoveď. Skúste to neskôr.'],
+  ['Invalid case code or password', 'Kód prípadu alebo heslo nie sú správne.'],
+  ['Participant name is not listed in this case', 'Zvolené meno nie je uvedené v tomto prípade.'],
+  ['Authentication required', 'Prihláste sa, prosím, do prípadu.'],
+  ['Password must be between 1 and 72 bytes', 'Heslo musí mať 1 až 72 bajtov.'],
+  ['Participants must have distinct, non-empty names and include the creator', 'Zadajte jedinečné mená všetkých účastníkov vrátane zakladateľa.'],
+  ['Case membership is required to send messages', 'Na odoslanie správy musíte byť členom prípadu.'],
+  ['Case membership is required', 'Na túto operáciu musíte byť členom prípadu.'],
+  ['Agreement not found', 'Dohoda sa nenašla.'],
+  ['Agreement is no longer pending', 'Dohodu už nie je možné potvrdiť ani odmietnuť.'],
+]);
+
 function showError(element, error) {
-  element.textContent = error?.message || 'Operáciu sa nepodarilo dokončiť. Skúste to znova.';
+  element.textContent = errorMessages.get(error?.message) || error?.message || 'Operáciu sa nepodarilo dokončiť. Skúste to znova.';
   element.hidden = false;
 }
 
@@ -94,12 +112,6 @@ function updateParticipants() {
     field.append(label, input);
     participantsInputs.append(field);
   }
-}
-
-function generateRecoveryKey(input, confirmation) {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  input.value = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  confirmation.checked = false;
 }
 
 function setLobbyBusy(busy) {
@@ -531,14 +543,18 @@ document.querySelector('.lobby-tabs').addEventListener('keydown', (event) => {
   $(`#tab-${next}`).focus();
 });
 $('#participant-count').addEventListener('change', updateParticipants);
-$('#generate-create-key').addEventListener('click', () => {
-  generateRecoveryKey($('#create-recovery-key'), $('#create-key-saved'));
+headerMoreToggle.addEventListener('click', () => {
+  const expanded = headerMoreToggle.getAttribute('aria-expanded') === 'true';
+  headerMoreToggle.setAttribute('aria-expanded', String(!expanded));
 });
-$('#generate-join-key').addEventListener('click', () => {
-  generateRecoveryKey($('#join-recovery-key'), $('#join-key-saved'));
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.header-more')) headerMoreToggle.setAttribute('aria-expanded', 'false');
 });
-$('#join-recovery-key').addEventListener('input', () => {
-  $('#join-key-saved').checked = false;
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && headerMoreToggle.getAttribute('aria-expanded') === 'true') {
+    headerMoreToggle.setAttribute('aria-expanded', 'false');
+    headerMoreToggle.focus();
+  }
 });
 updateParticipants();
 
@@ -551,15 +567,11 @@ createForm.addEventListener('submit', async (event) => {
     const names = [...participantsInputs.querySelectorAll('input')].map((input) => input.value.trim());
     const title = $('#create-title').value.trim();
     const password = $('#create-password').value;
-    const recoveryKey = $('#create-recovery-key').value;
     if (names.some((name) => !name) || new Set(names).size !== names.length) {
       throw new Error('Zadajte jedinečné mená všetkých účastníkov.');
     }
     if (new TextEncoder().encode(password).length > 72) {
       throw new Error('Heslo môže mať najviac 72 bajtov.');
-    }
-    if (!/^[0-9a-f]{64}$/.test(recoveryKey) || !$('#create-key-saved').checked) {
-      throw new Error('Vygenerujte si osobný kľúč a potvrďte jeho bezpečné uloženie.');
     }
     const user = await ensureUser(names[0]);
     const { data, error } = await supabase.rpc('create_conflict_case', {
@@ -567,14 +579,13 @@ createForm.addEventListener('submit', async (event) => {
       p_password: password,
       p_participants: names,
       p_creator_name: names[0],
-      p_recovery_key: recoveryKey,
     });
     if (error) throw error;
     try {
       await openCase(data.id, user);
       if (currentCase?.id === data.id) casePassword = password;
     } catch {
-      throw new Error(`Prípad bol vytvorený s kódom ${data.case_code}, ale nepodarilo sa ho otvoriť. Uložte si kľúč a použite kód a heslo na opätovný vstup.`);
+      throw new Error(`Prípad bol vytvorený s kódom ${data.case_code}, ale nepodarilo sa ho otvoriť. Použite kód a heslo na opätovný vstup.`);
     }
     createForm.reset();
     updateParticipants();
@@ -589,8 +600,6 @@ joinForm.addEventListener('input', () => {
   previewCase = undefined;
   rolePicker.hidden = true;
   roleButtons.replaceChildren();
-  $('#join-recovery-key').value = '';
-  $('#join-key-saved').checked = false;
 });
 joinForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -606,23 +615,15 @@ joinForm.addEventListener('submit', async (event) => {
       p_case_code: code, p_password: password,
     });
     if (error) throw error;
-    const membership = await supabase.from('case_members').select('participant_name')
-      .eq('case_id', data.id).eq('user_id', user.id).maybeSingle();
-    if (membership.error) throw membership.error;
     previewCase = { data, user, code, password };
     roleButtons.replaceChildren();
     data.participants.forEach((name) => {
-      const occupied = data.occupied_names.includes(name);
-      const own = membership.data?.participant_name === name;
       const role = document.createElement('button');
       role.type = 'button';
       role.className = 'role-button';
-      role.disabled = Boolean(membership.data && !own);
       const roleName = document.createElement('strong');
-      roleName.textContent = name;
-      const roleStatus = document.createElement('span');
-      roleStatus.textContent = own ? 'Vaše miesto' : occupied ? 'Obsadené · vyžaduje kľúč' : 'Voľné';
-      role.append(roleName, roleStatus);
+      roleName.textContent = `Vstúpiť ako ${name}`;
+      role.append(roleName);
       role.addEventListener('click', async () => {
         if (lobbyBusy) return;
         setLobbyBusy(true);
@@ -630,23 +631,15 @@ joinForm.addEventListener('submit', async (event) => {
         roleButtons.querySelectorAll('button').forEach((item) => { item.disabled = true; });
         try {
           if (!previewCase) throw new Error('Najprv overte kód a heslo prípadu.');
-          const recoveryKey = $('#join-recovery-key').value.trim();
-          if ((!own && !/^[0-9a-f]{64}$/.test(recoveryKey))
-            || (recoveryKey && (!/^[0-9a-f]{64}$/.test(recoveryKey) || !$('#join-key-saved').checked))) {
-            throw new Error('Zadajte osobný kľúč a potvrďte jeho bezpečné uloženie.');
-          }
           const joiningCase = previewCase;
           const { error: joinError } = await supabase.rpc('join_conflict_case', {
             p_case_code: previewCase.code, p_password: previewCase.password, p_participant_name: name,
-            p_recovery_key: recoveryKey || null,
           });
           if (joinError) throw joinError;
           await openCase(joiningCase.data.id, joiningCase.user);
           if (currentCase?.id === joiningCase.data.id) casePassword = joiningCase.password;
           previewCase = undefined;
           joinForm.reset();
-          $('#join-recovery-key').value = '';
-          $('#join-key-saved').checked = false;
           rolePicker.hidden = true;
         } catch (joinError) {
           showError(loginError, joinError);

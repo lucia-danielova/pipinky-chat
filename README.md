@@ -34,22 +34,14 @@ Pred nasadením klienta použite všetky migrácie a nasaďte aktuálnu funkciu
 Tlačidlo pozvánky kopíruje odkaz, kód aj heslo; celú pozvánku posielajte iba
 dôveryhodnej osobe bezpečným kanálom. Heslo sa neukladá do `sessionStorage`:
 po obnovení stránky ho treba pred kopírovaním pozvánky znovu overiť.
-Osobný obnovovací kľúč sa do pozvánky nikdy nepridáva.
 
-Používatelia získavajú anonymnú reláciu a pri prvom obsadení miesta si
-vygenerujú osobný obnovovací kľúč. Každý účastník si ho musí bezpečne uložiť
-a nikomu ho neposkytnúť. Pri strate relácie sa dá miesto obnoviť pomocou kódu,
-spoločného hesla a vlastného kľúča; pôvodná relácia tým stratí členstvo.
-Pri strate kľúča nemožno identitu bezpečne obnoviť. Kľúče neukladajte spolu
-s heslom a používajte TLS. Databáza uchováva iba ich odtlačky.
-Prvé obsadenie voľného mena je stále chránené iba spoločným heslom: systém
-neoveruje, či meno obsadila zamýšľaná osoba.
-
-Existujúci členovia musia pred stratou relácie vstúpiť znovu pod svojím menom,
-vygenerovať si kľúč a potvrdiť jeho uloženie. Staré obsadené miesto bez
-nastaveného kľúča nemožno po strate relácie obnoviť. Pred širším použitím
-nastav ochranu proti zneužitiu, napríklad CAPTCHA a obmedzenie pokusov
-o pripojenie k prípadu.
+Používatelia získavajú anonymnú reláciu a miesto obnovia pomocou kódu,
+spoločného hesla a výberu mena. Predchádzajúca relácia daného mena tým stratí
+členstvo. **Každý, kto pozná kód a heslo, môže prevziať ľubovoľné meno a
+potvrdzovať dohody v jeho mene**; systém neoveruje individuálnu identitu.
+Používajte TLS, zdieľajte pozvánku iba s dôveryhodnými osobami a pred širším
+použitím nastavte ochranu proti zneužitiu, napríklad CAPTCHA a obmedzenie
+pokusov o pripojenie k prípadu.
 
 Tlačidlo **Odísť** zavrie aktuálny prípad, ale ponechá anonymnú reláciu a
 členstvo, aby sa používateľ mohol neskôr vrátiť na svoje miesto. Time-out je

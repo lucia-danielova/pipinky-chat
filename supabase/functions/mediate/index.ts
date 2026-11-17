@@ -128,7 +128,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   const authorization = request.headers.get('Authorization');
   if (!authorization || !/^Bearer\s+\S+$/i.test(authorization)) {
-    return jsonResponse({ error: 'Prihlás sa do chatu.' }, 401);
+    return jsonResponse({ error: 'Prihláste sa do chatu.' }, 401);
   }
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
@@ -170,7 +170,7 @@ export async function handleRequest(request: Request): Promise<Response> {
   const { data: userData, error: authError } = await userClient.auth.getUser(
     authorization.replace(/^Bearer\s+/i, ''),
   );
-  if (authError || !userData.user) return jsonResponse({ error: 'Prihlás sa do chatu.' }, 401);
+  if (authError || !userData.user) return jsonResponse({ error: 'Prihláste sa do chatu.' }, 401);
 
   const [caseResponse, memberResponse] = await Promise.all([
     userClient.from('conflict_cases')
@@ -204,7 +204,7 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
   if (reservation.retry_after > 0) {
     return jsonResponse(
-      { error: 'Mediátora môžeš požiadať znova o chvíľu.', retry_after: reservation.retry_after },
+      { error: 'Mediátora môžete požiadať znova o chvíľu.', retry_after: reservation.retry_after },
       429,
       { 'Retry-After': String(reservation.retry_after) },
     );
@@ -221,7 +221,7 @@ export async function handleRequest(request: Request): Promise<Response> {
   const systemPrompt = [
     'Si empatický facilitátor nenásilnej komunikácie (NVC); podporuj dôstojnosť, dobrovoľnosť a bezpečnosť každého účastníka.',
     'Rozlišuj konkrétne pozorovania od hodnotení, pocity od interpretácií, potreby od stratégií a uskutočniteľné prosby od požiadaviek.',
-    'Odpovedaj po slovensky; summary má najviac tri vety. Nevymýšľaj fakty, pocity, diagnózy ani úmysly.',
+    'Odpovedaj po slovensky a účastníkom vykaj; summary má najviac tri vety. Nevymýšľaj fakty, pocity, diagnózy ani úmysly.',
     'Možné potreby formuluj ako hypotézy na overenie; nepredpokladaj rovnakú zodpovednosť alebo moc účastníkov.',
     'Nenúť nikoho odpustiť, pokračovať v rozhovore ani uzavrieť dohodu. Nenahrádzaj odbornú či krízovú pomoc.',
     'Pri náznakoch násilia, vyhrážok, nátlaku alebo bezprostredného ohrozenia nastav safety_alert na true, uprednostni bezpečie pred mediáciou, ponúkni dobrovoľné prerušenie a primeranú odbornú alebo krízovú pomoc; pri bezprostrednom nebezpečenstve odporuč miestne tiesňové služby. Nenavrhuj spoločnú konfrontáciu ani dohodu.',
@@ -267,11 +267,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     );
   } catch (error) {
     console.error('Gemini request failed.', error instanceof Error ? error.name : 'unknown');
-    return jsonResponse({ error: 'Mediátor momentálne neodpovedá. Skús neskôr.' }, 502);
+    return jsonResponse({ error: 'Mediátor momentálne neodpovedá. Skúste to neskôr.' }, 502);
   }
   if (!geminiResponse.ok) {
     console.error('Gemini request failed with status', geminiResponse.status);
-    return jsonResponse({ error: 'Mediátor momentálne neodpovedá. Skús neskôr.' }, 502);
+    return jsonResponse({ error: 'Mediátor momentálne neodpovedá. Skúste to neskôr.' }, 502);
   }
 
   let result: MediatorResult | null = null;
@@ -289,7 +289,7 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
   if (!result) {
     console.error('Gemini returned an invalid structured result.');
-    return jsonResponse({ error: 'Mediátor vrátil neplatnú odpoveď. Skús neskôr.' }, 502);
+    return jsonResponse({ error: 'Mediátor vrátil neplatnú odpoveď. Skúste to neskôr.' }, 502);
   }
   if (action === 'private_coach') return jsonResponse({ ok: true, coaching: result });
 

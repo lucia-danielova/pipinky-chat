@@ -20,7 +20,7 @@ declare
 begin
   perform set_config('request.jwt.claim.sub', member_id::text, true);
   case_data := public.create_conflict_case(
-    'Test', 'pw', array['A', 'B'], 'A', repeat('a', 64)
+    'Test', 'pw', array['A', 'B'], 'A'
   );
   reservation := public.reserve_mediator_request((case_data->>'id')::uuid, member_id, 'mediate');
   begin
