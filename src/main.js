@@ -23,12 +23,14 @@ const messageForm = document.querySelector('#message-form');
 const messageInput = document.querySelector('#message-input');
 const sendButton = document.querySelector('#send-button');
 const mediateButton = document.querySelector('#mediate-button');
+const modeButtons = document.querySelectorAll('.mode-chip');
 const chatError = document.querySelector('#chat-error');
 
 const MESSAGE_HISTORY_LIMIT = 40;
 const VISIBLE_MESSAGE_LIMIT = 100;
 const MAX_RENDERED_MESSAGES = 150;
-const messageTimeFormatter = new Intl.DateTimeFormat('sk-SK', {
+const SENDER_COLORS = ['#a5b4fc', '#6ee7b7', '#f9a8d4', '#93c5fd', '#fdba74', '#d8b4fe'];
+const timeFormatter = new Intl.DateTimeFormat('sk-SK', {
   hour: '2-digit',
   minute: '2-digit',
 });
@@ -37,6 +39,15 @@ const renderedMessages = new Set();
 let currentUser;
 let activeUserId;
 let messageChannel;
+let isMediating = false;
+
+function getSenderColor(name) {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = name.charCodeAt(index) + ((hash << 5) - hash);
+  }
+  return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length];
+}
 
 function showError(element, error) {
   element.textContent = error?.message || 'Operáciu sa nepodarilo dokončiť. Skontroluj pripojenie a skús to znova.';
@@ -54,6 +65,48 @@ function compareMessages(first, second) {
   return timeDifference || Number(first.id) - Number(second.id);
 }
 
+function setMediatorControlsDisabled(disabled, statusText) {
+  isMediating = disabled;
+  mediateButton.disabled = disabled;
+  modeButtons.forEach((button) => {
+    button.disabled = disabled;
+  });
+
+  const label = mediateButton.querySelector('.mediator-label');
+  if (label) label.textContent = statusText;
+}
+
+async function triggerMediation({
+  mode = 'general',
+  userQuestion = '',
+  requireLocalMessages = true,
+} = {}) {
+  if (isMediating) return;
+  clearMessage(chatError);
+
+  if (requireLocalMessages && !recentMessages.length) {
+    showError(chatError, new Error('Najprv musí v chate prebehnúť aspoň jedna správa.'));
+    return;
+  }
+
+  setMediatorControlsDisabled(true, 'AI mediátor premýšľa…');
+
+  try {
+    const body = { mode };
+    if (userQuestion) body.userQuestion = userQuestion;
+
+    const { error } = await supabase.functions.invoke('mediate', { body });
+    if (error) {
+      const serverPayload = await error.context?.json?.().catch(() => null);
+      throw new Error(serverPayload?.error || error.message);
+    }
+  } catch (error) {
+    showError(chatError, error);
+  } finally {
+    setMediatorControlsDisabled(false, 'Pomoc AI mediátora');
+  }
+}
+
 function renderMessage(message) {
   const id = String(message.id);
   if (renderedMessages.has(id)) return;
@@ -62,6 +115,7 @@ function renderMessage(message) {
 
   const isMediator = message.is_mediator === true;
   const isOwnMessage = !isMediator && message.sender_id === currentUser?.id;
+  const senderName = message.sender_name || 'Používateľ';
   const article = document.createElement('article');
   article.className = `message${isOwnMessage ? ' message-own' : ''}${isMediator ? ' message-mediator' : ''}`;
   article.dataset.messageId = id;
@@ -71,11 +125,14 @@ function renderMessage(message) {
   meta.className = 'message-meta';
   const sender = document.createElement('strong');
   sender.className = 'message-sender';
-  sender.textContent = message.sender_name || 'Používateľ';
+  sender.textContent = isMediator ? `✦ ${senderName}` : senderName;
+  if (!isOwnMessage && !isMediator) {
+    sender.style.color = getSenderColor(senderName);
+  }
   const time = document.createElement('time');
   time.className = 'message-time';
   time.dateTime = message.created_at;
-  time.textContent = messageTimeFormatter.format(new Date(message.created_at));
+  time.textContent = timeFormatter.format(new Date(message.created_at));
   meta.append(sender, time);
 
   const body = document.createElement('p');
@@ -101,7 +158,7 @@ function renderMessage(message) {
   recentMessages.push({
     id,
     created_at: message.created_at,
-    sender_name: message.sender_name || 'Používateľ',
+    sender_name: senderName,
     message: message.message || '',
   });
   recentMessages.sort(compareMessages);
@@ -151,8 +208,8 @@ async function startListening() {
 
 function resizeMessageInput() {
   messageInput.style.height = 'auto';
-  messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
-  messageInput.style.overflowY = messageInput.scrollHeight > 120 ? 'auto' : 'hidden';
+  messageInput.style.height = `${Math.min(messageInput.scrollHeight, 110)}px`;
+  messageInput.style.overflowY = messageInput.scrollHeight > 110 ? 'auto' : 'hidden';
 }
 
 async function openChat(user) {
@@ -259,6 +316,14 @@ messageForm.addEventListener('submit', async (event) => {
     if (error) throw error;
     messageInput.value = '';
     resizeMessageInput();
+
+    if (/@(mediator|mediátor|ai)\b/i.test(message)) {
+      const userQuestion = message.replace(/@(mediator|mediátor|ai)\b/gi, '').trim();
+      await triggerMediation({
+        userQuestion: userQuestion || message,
+        requireLocalMessages: false,
+      });
+    }
   } catch (error) {
     showError(chatError, error);
   } finally {
@@ -277,24 +342,13 @@ messageInput.addEventListener('keydown', (event) => {
 messageInput.addEventListener('input', resizeMessageInput);
 
 mediateButton.addEventListener('click', async () => {
-  clearMessage(chatError);
-  if (!recentMessages.length) {
-    showError(chatError, new Error('Najprv musí v chate prebehnúť aspoň jedna správa.'));
-    return;
-  }
+  await triggerMediation({ mode: 'general' });
+});
 
-  mediateButton.disabled = true;
-  mediateButton.textContent = 'Mediátor premýšľa…';
-  try {
-    const { error } = await supabase.functions.invoke('mediate');
-    if (error) throw error;
-  } catch (error) {
-    const errorBody = await error.context?.json?.().catch(() => null);
-    showError(chatError, new Error(errorBody?.error || error.message));
-  } finally {
-    mediateButton.disabled = false;
-    mediateButton.textContent = '✦ Pomoc mediátora';
-  }
+modeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    triggerMediation({ mode: button.dataset.mode || 'general' });
+  });
 });
 
 document.querySelector('#logout-button').addEventListener('click', async () => {
@@ -305,7 +359,7 @@ document.querySelector('#logout-button').addEventListener('click', async () => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && currentUser) {
-    void startListening();
+    void startListening().catch((error) => showError(chatError, error));
   }
 });
 
