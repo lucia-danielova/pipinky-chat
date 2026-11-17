@@ -3,58 +3,218 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-    <meta name="theme-color" content="#111827" />
-    <meta name="description" content="Skupinový chat s AI mediátorom." />
-    <title>Pipinky Chat</title>
-    <script type="module" crossorigin src="./assets/index-B-VPD2Mx.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BPop05Ex.css">
+    <meta name="theme-color" content="#080c14" />
+    <meta name="description" content="Bezpečný priestor pre vedený rozhovor a riešenie konfliktov." />
+    <title>Mediačný priestor</title>
+    <script type="module" crossorigin src="./assets/index-BkGSJBsJ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DEpt6Ukt.css">
   </head>
   <body>
     <main class="app-shell">
       <section id="login-view" class="login-view" aria-labelledby="login-title">
-        <div class="brand-mark" aria-hidden="true">P</div>
-        <p class="eyebrow">SPOLOČNÝ PRIESTOR</p>
-        <h1 id="login-title">Pipinky Chat</h1>
-        <p class="muted">Zadaj meno a vstúp do spoločného chatu.</p>
-        <form id="login-form" class="form-card">
-          <div class="field">
-            <label for="display-name">Tvoje meno</label>
-            <input id="display-name" name="display-name" type="text" maxlength="40" autocomplete="nickname" required />
+        <div class="login-intro">
+          <div class="brand-mark" aria-hidden="true">✳</div>
+          <p class="eyebrow">PRIESTOR PRE POROZUMENIE</p>
+          <h1 id="login-title">Mediačný priestor</h1>
+          <p class="intro-copy">Každý príbeh má viac pohľadov. Vytvorte si priestor, v ktorom ich môžete pokojne vypočuť.</p>
+          <div class="intro-note">
+            <span aria-hidden="true">✦</span>
+            <p><strong>Rozhovor s rešpektom</strong><br />Postupujte vlastným tempom s podporou AI mediátora.</p>
+          </div>
+        </div>
+
+        <div class="lobby-card">
+          <div class="lobby-heading">
+            <p class="eyebrow">ZAČNITE TU</p>
+            <h2>Vitajte v priestore</h2>
+            <p>Vytvorte nový prípad alebo sa pripojte k existujúcemu.</p>
+          </div>
+          <div class="lobby-tabs" role="tablist" aria-label="Spôsob vstupu">
+            <button id="tab-create" type="button" role="tab" aria-selected="true" aria-controls="create-panel">Založiť nový prípad</button>
+            <button id="tab-join" type="button" role="tab" aria-selected="false" aria-controls="join-panel" tabindex="-1">Vstúpiť do prípadu</button>
+          </div>
+          <div id="create-panel" role="tabpanel" aria-labelledby="tab-create">
+            <form id="create-room-form" class="lobby-form">
+              <div class="field">
+                <label for="create-title">Názov témy</label>
+                <input id="create-title" type="text" minlength="2" maxlength="100" placeholder="Napr. Dohoda o spoločnom bývaní" required />
+              </div>
+              <div class="field">
+                <label for="create-password">Heslo prípadu</label>
+                <input id="create-password" type="password" autocomplete="new-password" placeholder="Zvoľte heslo pre účastníkov" required />
+                <span class="field-hint">Heslo zdieľajte s účastníkmi bezpečnou cestou. Pozvánka obsahuje aj heslo.</span>
+              </div>
+              <div class="field">
+                <label for="participant-count">Počet účastníkov</label>
+                <select id="participant-count">
+                  <option value="2">2 účastníci</option>
+                  <option value="3">3 účastníci</option>
+                  <option value="4">4 účastníci</option>
+                  <option value="5">5 účastníkov</option>
+                  <option value="6">6 účastníkov</option>
+                  <option value="7">7 účastníkov</option>
+                  <option value="8">8 účastníkov</option>
+                </select>
+              </div>
+              <fieldset class="participants-fieldset">
+                <legend>Účastníci rozhovoru</legend>
+                <div id="participants-inputs" class="participants-inputs"></div>
+                <p class="field-hint">Prvý účastník je zakladateľ prípadu. Každé meno musí byť jedinečné.</p>
+              </fieldset>
+              <div class="field">
+                <label for="create-recovery-key">Váš osobný obnovovací kľúč</label>
+                <input id="create-recovery-key" type="text" autocomplete="off" readonly required />
+                <button id="generate-create-key" class="button button-subtle" type="button">Vygenerovať osobný kľúč</button>
+                <span class="field-hint">Uložte si kľúč na bezpečné miesto. Nezdieľajte ho s ostatnými; pri strate ho nemožno obnoviť.</span>
+                <label><input id="create-key-saved" type="checkbox" required /> Kľúč som si bezpečne uložil(a).</label>
+              </div>
+              <button id="create-button" class="button button-primary full-width" type="submit">Vytvoriť prípad <span aria-hidden="true">→</span></button>
+            </form>
+          </div>
+          <div id="join-panel" role="tabpanel" aria-labelledby="tab-join" hidden>
+            <form id="join-room-form" class="lobby-form">
+              <div class="field">
+                <label for="join-case-code">Kód prípadu</label>
+                <input id="join-case-code" type="text" autocomplete="off" placeholder="MED-A1B2C3" pattern="[Mm][Ee][Dd]-[A-Fa-f0-9]{6}" maxlength="10" required />
+              </div>
+              <div class="field">
+                <label for="join-password">Heslo prípadu</label>
+                <input id="join-password" type="password" autocomplete="current-password" placeholder="Zadajte heslo prípadu" required />
+              </div>
+              <button id="join-button" class="button button-primary full-width" type="submit">Pokračovať <span aria-hidden="true">→</span></button>
+            </form>
+            <div id="join-role-picker" class="role-picker" aria-live="polite" hidden>
+              <p class="eyebrow">KROK 2</p>
+              <h3>Vyberte svoje meno</h3>
+              <p>Na obnovu obsadeného miesta potrebujete svoj osobný kľúč. Na nové miesto si vygenerujte a uložte nový kľúč.</p>
+              <div class="field">
+                <label for="join-recovery-key">Osobný obnovovací kľúč</label>
+                <input id="join-recovery-key" type="text" autocomplete="off" spellcheck="false" />
+                <button id="generate-join-key" class="button button-subtle" type="button">Vygenerovať nový kľúč</button>
+                <span class="field-hint">Kľúč si bezpečne uložte a nezdieľajte ho. Pri návrate cez existujúcu reláciu ho nemusíte zadávať.</span>
+                <label><input id="join-key-saved" type="checkbox" /> Kľúč som si bezpečne uložil(a).</label>
+              </div>
+              <div id="join-role-buttons" class="role-buttons"></div>
+            </div>
           </div>
           <p id="login-error" class="error-message" role="alert" hidden></p>
-          <button id="login-button" class="button button-primary" type="submit">Vstúpiť do chatu</button>
-        </form>
-        <p class="muted invite-note">Chat je verejný. Meno nie je overené a môže ho použiť ktokoľvek.</p>
+        </div>
       </section>
 
-      <section id="chat-view" class="chat-view" aria-label="Skupinový chat" hidden>
-        <header class="chat-header">
-          <div>
-            <p class="eyebrow">SPOLOČNÝ PRIESTOR</p>
-            <h1>Pipinky Chat</h1>
-            <p id="current-user" class="user-label"></p>
+      <section id="chat-view" class="chat-view" aria-label="Mediačný priestor" hidden>
+        <header class="case-header">
+          <div class="case-identity">
+            <div class="brand-mark brand-mark-small" aria-hidden="true">✳</div>
+            <div class="case-details">
+              <p class="eyebrow">MEDIAČNÝ PRIESTOR</p>
+              <h1 id="case-title-display"></h1>
+              <div class="case-badges">
+                <button id="copy-invite-button" class="invite-button" type="button" title="Skopírovať pozvánku vrátane hesla">
+                  <span id="case-code-badge" class="case-code"></span><span>Pozvať partnera</span>
+                </button>
+                <span id="current-user" class="user-badge"></span>
+              </div>
+            </div>
           </div>
-          <button id="logout-button" class="button button-quiet" type="button">Odísť</button>
+          <div class="header-actions">
+            <div id="pace-indicator" class="pace-pill" data-pace="calm" role="status">
+              <span>Tempo rozhovoru</span><strong id="tension-label">Pokojné tempo</strong>
+            </div>
+            <button id="timeout-button" class="button button-subtle" type="button">◷ <span>Pauza</span></button>
+            <button id="export-button" class="button button-subtle" type="button">↓ <span>Zápis</span></button>
+            <button id="logout-button" class="button button-subtle" type="button">Odísť</button>
+          </div>
         </header>
-        <details class="name-settings">
-          <summary>Zmeniť meno</summary>
-          <form id="name-form" class="name-form">
-            <label class="sr-only" for="new-name">Nové meno</label>
-            <input id="new-name" type="text" maxlength="40" autocomplete="nickname" placeholder="Nové meno" required />
-            <button id="name-button" class="button button-quiet" type="submit">Uložiť</button>
+
+        <nav class="phase-stepper" aria-label="Fázy riešenia sporu">
+          <ol>
+            <li data-phase-step="0" aria-current="step"><span>1</span><strong>Pohľady</strong></li>
+            <li data-phase-step="1"><span>2</span><strong>Potreby</strong></li>
+            <li data-phase-step="2"><span>3</span><strong>Kompromis</strong></li>
+            <li data-phase-step="3"><span>4</span><strong>Dohoda</strong></li>
+          </ol>
+        </nav>
+
+        <div class="conversation">
+          <div class="conversation-heading">
+            <div><p class="eyebrow">SPOLOČNÝ ROZHOVOR</p><h2>Priestor pre dialóg</h2></div>
+            <span class="conversation-note">Hovorte otvorene a s rešpektom</span>
+          </div>
+          <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <div id="chat-empty" class="chat-empty">
+            <span class="empty-icon" aria-hidden="true">✧</span>
+            <h3>Každý rozhovor sa začína prvým krokom</h3>
+            <p>Napíšte, čo by ste chceli povedať, alebo požiadajte mediátora o pomoc.</p>
+          </div>
+        </div>
+
+        <footer class="chat-dock">
+          <section id="coach-drawer" class="coach-drawer" aria-labelledby="coach-title" hidden>
+            <div class="drawer-header">
+              <div><p class="privacy-badge">SÚKROMNÁ KONZULTÁCIA – VIDÍŠ IBA TY</p><h2 id="coach-title">Súkromný kouč</h2></div>
+              <button id="coach-close" class="icon-button" type="button" aria-label="Zavrieť súkromného kouča">×</button>
+            </div>
+            <p class="drawer-note">Tento návrh sa nezobrazí ostatným, pokiaľ ho sami neodošlete.</p>
+            <div id="coach-result" aria-live="polite"></div>
+            <button id="coach-use" class="button button-quiet" type="button" hidden>Použiť tento návrh</button>
+          </section>
+          <p id="chat-error" class="error-message" role="alert" hidden></p>
+          <p id="chat-notice" class="notice-message" role="status" hidden></p>
+          <form id="message-form" class="message-form">
+            <label class="sr-only" for="message-input">Vaša správa</label>
+            <textarea id="message-input" name="message" rows="2" maxlength="2000" placeholder="Napíšte svoju správu alebo oslovte @mediator…" required></textarea>
+            <div class="composer-actions">
+              <span>Enter odošle · Shift + Enter pridá riadok</span>
+              <div>
+                <button id="coach-button" class="button button-quiet" type="button">✧ Súkromný kouč</button>
+                <button id="send-button" class="button button-primary" type="submit">Odoslať <span aria-hidden="true">↑</span></button>
+              </div>
+            </div>
           </form>
-        </details>
-        <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-        <p id="chat-error" class="error-message chat-error" role="alert" hidden></p>
-        <form id="message-form" class="message-form">
-          <label class="sr-only" for="message-input">Napíš správu</label>
-          <input id="message-input" name="message" type="text" maxlength="2000" placeholder="Napíš správu…" autocomplete="off" required />
-          <button id="send-button" class="button button-primary send-button" type="submit" aria-label="Poslať správu">Poslať</button>
-        </form>
-        <button id="mediate-button" class="button button-mediator" type="button">
-          <span aria-hidden="true">✦</span> Pomoc mediátora
-        </button>
+          <div class="mediator-actions">
+            <button id="mediate-button" class="button button-mediator" type="button">✳ <span class="mediator-label">Zavolať mediátora</span></button>
+            <div class="mediator-tools">
+              <label for="mediator-mode-select">Nástroje</label>
+              <select id="mediator-mode-select">
+                <option value="auto" selected>Automaticky</option>
+                <option value="facilitate">Facilitovať</option>
+                <option value="reframe">Preložiť do Ja-výroku</option>
+                <option value="needs">Odokryť potreby</option>
+                <option value="reality_check">Test reality</option>
+                <option value="agreement">Navrhnúť dohodu</option>
+              </select>
+            </div>
+          </div>
+        </footer>
       </section>
     </main>
+
+    <div id="timeout-overlay" class="timeout-overlay" hidden>
+      <section class="timeout-dialog" role="dialog" aria-modal="true" aria-labelledby="timeout-title" aria-describedby="timeout-description">
+        <div class="breathing-orb" aria-hidden="true">✳</div>
+        <p class="eyebrow">CHVÍĽA PRE SEBA</p>
+        <h2 id="timeout-title">Doprajte si nádych</h2>
+        <p id="timeout-description">Nadýchnite sa nosom, na chvíľu zadržte dych a pomaly vydýchnite. Zopakujte vlastným tempom.</p>
+        <p id="timeout-countdown" class="timeout-countdown" aria-live="off">01:00</p>
+        <p class="timeout-hint">Táto prestávka je viditeľná iba vám.</p>
+        <button id="timeout-close" class="button button-quiet" type="button">Ukončiť prestávku</button>
+      </section>
+    </div>
+    <dialog id="invite-dialog" class="invite-dialog" aria-labelledby="invite-title" aria-describedby="invite-description">
+      <form id="invite-form" class="lobby-form">
+        <h2 id="invite-title">Skopírovať pozvánku</h2>
+        <p id="invite-description">Po obnovení stránky zadajte heslo prípadu. Pozvánka bude obsahovať aj heslo, preto ju zdieľajte iba bezpečnou cestou.</p>
+        <div class="field">
+          <label for="invite-password">Heslo prípadu</label>
+          <input id="invite-password" type="password" autocomplete="current-password" required />
+        </div>
+        <p id="invite-error" class="error-message" role="alert" hidden></p>
+        <div class="invite-actions">
+          <button id="invite-cancel" class="button button-quiet" type="button">Zrušiť</button>
+          <button id="invite-verify" class="button button-primary" type="submit">Overiť heslo</button>
+          <button id="invite-copy" class="button button-primary" type="button" hidden>Skopírovať pozvánku</button>
+        </div>
+      </form>
+    </dialog>
   </body>
 </html>
